@@ -42,7 +42,7 @@ const Login: FC<LoginProps> = ({ onLoginSuccess }) => {
                     </p>
                 </div>
                 <form onSubmit={handleLogin} className="mt-8 space-y-6  ">
-                    <div className="rounded-md shadow-sm space-y-4  flex flex-col">
+                    <div className="rounded-md  space-y-4 flex flex-col">
                         <div>
                             <label
                                 htmlFor="email"
@@ -79,7 +79,7 @@ const Login: FC<LoginProps> = ({ onLoginSuccess }) => {
                     <div >
                         <button
                             type="submit"
-                            className="flex ml-40 justify-center py-2 px-4 border border-transparent text-sm hover:scale-95 scale:105 font-medium rounded-md text-black bg-Blue/90 hover:bg-Blue/75 focus:outline-none focus:ring-1 focus:ring-offset-2 focus:ring-Blue/90 transition"
+                            className="flex ml-40 justify-center py-2 px-6 border border-transparent text-md bg-gray-200 rounded-full hover:scale-95 hover:transition-all duration-300 font-medium text-black "
                         >
                             Login
                         </button>

@@ -93,7 +93,7 @@ const Signup: FC<SignupProps> = ({ onSignupSuccess }) => {
                     </div>
                     <button
                         type="submit"
-                        className="ml-32 w-1/3 bg-Blue/90 hover:bg-Blue/80 text-black font-bold py-3 rounded-lg shadow-md transition transform hover:scale-95"
+                        className="ml-32 w-1/3 text-black font-bold py-3 bg-gray-200 rounded-full hover:scale-95 hover:transition-all duration-300"
                     >
                         Register
                     </button>
