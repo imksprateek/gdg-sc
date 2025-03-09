@@ -91,5 +91,30 @@ def query_images():
     return jsonify({"userId": user_id, "query": query_text, "response": response_text, "timestamp": timestamp})
 
 
+@app.route("/clear-context", methods=["POST"])
+def clear_context():
+    """Clears all stored context for a given userId."""
+    data = request.json
+    if "userId" not in data:
+        return jsonify({"error": "UserId is required"}), 400
+
+    user_id = data["userId"]
+
+    # 🔹 Retrieve all stored documents
+    all_docs = vector_store.get()
+
+    # 🔹 Identify document IDs belonging to the user
+    user_doc_ids = [doc_id for doc_id in all_docs["ids"] if doc_id.startswith(user_id)]
+
+    # 🔹 If no records exist for this user, return a message
+    if not user_doc_ids:
+        return jsonify({"message": "No context found for this user."})
+
+    # 🔹 Delete user's records from the vector store
+    vector_store.delete(user_doc_ids)
+
+    return jsonify({"message": f"Cleared context for userId: {user_id}", "deleted_entries": len(user_doc_ids)})
+
+
 if __name__ == "__main__":
     app.run(debug=True)
