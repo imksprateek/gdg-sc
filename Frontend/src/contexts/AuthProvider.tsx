@@ -17,6 +17,7 @@ interface AuthContextType {
     signup: (name:string,email: string, password: string, role: "user" | "admin") => Promise<any>;
     login: (email: string, password: string) => Promise<any>;
     logout: () => Promise<void>;
+    getIdToken:() => Promise<string | null>;
 }
 
 interface AuthProviderProps {
@@ -30,6 +31,7 @@ export const AuthContext = createContext<AuthContextType>({
     signup: async () => { },
     login: async () => { },
     logout: async () => { },
+    getIdToken: async () => null,
 })
 
 export const useAuth = () =>{
@@ -50,6 +52,7 @@ setPersistence(auth, browserLocalPersistence)
     .catch((error) => {
         console.error("error setting persistence", error)
     })
+
 
 const AuthProvider = ({ children }: AuthProviderProps) => {
     const [currUser, setCurrUser] = useState<User | null>(null);
@@ -93,6 +96,20 @@ const AuthProvider = ({ children }: AuthProviderProps) => {
         }
     }
 
+    const getIdToken = async()=>{
+        try {
+            const currentUser = auth.currentUser;
+            if (currentUser) {
+                const token = await currentUser.getIdToken(true);
+                return token;
+            }
+            return null;
+        } catch (error) {
+            console.error("Error getting token:", error);
+            return null;
+        }
+    }
+
     useEffect(()=>{
         const unsubscribe = onAuthStateChanged(auth,async (firebaseUser)=>{
             if(firebaseUser){
@@ -125,7 +142,7 @@ const AuthProvider = ({ children }: AuthProviderProps) => {
 
 
     return (
-        <AuthContext.Provider value={{ currUser, signup, login, logout,loading }}>
+        <AuthContext.Provider value={{ currUser, signup, login, logout,loading,getIdToken }}>
             {!loading? children:<div>Loading...</div>}
         </AuthContext.Provider>
     )

@@ -1,5 +1,7 @@
 import { motion } from "motion/react";
 import { HoverBorderGradient } from "../../components/ui/hover-border-gradient";
+import { useAuth } from "../../contexts/AuthProvider";
+import { useEffect } from "react";
 
 
 export function HoverBorderGradientDemo() {
@@ -19,6 +21,16 @@ export function HoverBorderGradientDemo() {
 
 
 const Home = () => {
+    const { getIdToken } = useAuth();
+    useEffect(() => {
+        const fetchToken = async () => {
+            const token = await getIdToken();
+            console.log("Firebase ID Token:", token);
+        };
+        
+        fetchToken();
+    }, [getIdToken]);
+
     return (
         <div className="">
             <motion.div className="text-center" initial={{ scale: 0.6 }} animate={{ scale: 1, transition: { duration: 0.3, type: "tween" } }}>
@@ -30,7 +42,7 @@ const Home = () => {
                     Neurolens enhances memory recall, object discovery, and real-world navigation using AI. Stay independent and in control with real-time context tracking and smart assistance.
                 </p>
                 <div className="mt-6 flex justify-center space-x-4 mt-10">
-                    <HoverBorderGradientDemo/>
+                    <HoverBorderGradientDemo />
                 </div>
             </motion.div>
 

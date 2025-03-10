@@ -6,6 +6,7 @@ from flask import Flask, request, jsonify
 from PIL import Image
 import io
 import datetime
+from flask_cors import CORS
 
 # ✅ Use API Key for Authentication
 API_KEY = ""
@@ -22,7 +23,7 @@ vector_store = chroma_client.get_or_create_collection(name="image_descriptions")
 embedder = SentenceTransformer("all-MiniLM-L6-v2")
 
 app = Flask(__name__)
-
+CORS(app)
 
 @app.route("/describe-image", methods=["POST"])
 def describe_image():
