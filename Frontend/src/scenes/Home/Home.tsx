@@ -2,6 +2,7 @@ import { motion } from "motion/react";
 import { HoverBorderGradient } from "../../components/ui/hover-border-gradient";
 import { useAuth } from "../../contexts/AuthProvider";
 import { useEffect } from "react";
+import VoiceAssistant from "../../components/VoiceAssistant";
 
 
 export function HoverBorderGradientDemo() {
@@ -45,6 +46,7 @@ const Home = () => {
                     <HoverBorderGradientDemo />
                 </div>
             </motion.div>
+            <VoiceAssistant/>
 
         </div>
     )
