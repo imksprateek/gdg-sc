@@ -7,7 +7,7 @@ export const storeProcessedTextLog = async (data) => {
         const logsCollection = firestore.collection('processedTextLogs');
         const result = await logsCollection.add({
             text: data.text,
-            timestamp: admin.firestore.FieldValue.serverTimestamp(),
+            timestamp: new Date().toISOString(),
             userId: data.userId || 'anonymous',
             source: data.source || 'speech-to-text',
             metadata: data.metadata || {}

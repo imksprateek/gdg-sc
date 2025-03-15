@@ -7,6 +7,8 @@ import contextRoutes from "./routes/context.route.js"
 import { initializeWebsocketServer } from "./config/websocket.service.js"
 import http from "http"
 import speechRoutes from "./routes/speech.route.js"
+import chatRoutes from "./routes/chat.route.js"
+import adminRoutes from "./routes/admin.route.js"
 
 dotenv.config();
 
@@ -27,6 +29,8 @@ app.use(express.json());
 app.use('/api/context', contextRoutes);
 app.use('/api/speech', speechRoutes); 
 // app.use('/api/care', careRoutes);
+app.use('/api/chat',chatRoutes);
+app.use("/api/admin",adminRoutes);
 
 
 

@@ -1,61 +1,67 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthProvider';
 import RecordRTC from 'recordrtc';
-import axios from 'axios'
-import { Buffer } from 'buffer';
 
 interface Message {
     type: 'user' | 'assistant' | 'error';
     text: string;
-    sourceType?: 'voice' | 'text';
+    sourceType?: 'text' | 'voice';
 }
 
-const VoiceAssistant: React.FC = () => {
+const AssistantInterface: React.FC = () => {
     const [isRecording, setIsRecording] = useState<boolean>(false);
     const [isConnected, setIsConnected] = useState<boolean>(false);
     const [messages, setMessages] = useState<Message[]>([]);
     const [currentAudio, setCurrentAudio] = useState<string | null>(null);
     const [isProcessing, setIsProcessing] = useState<boolean>(false);
-    const [textInput, setTextInput] = useState<string>("");
+    const [textInput, setTextInput] = useState<string>('');
     const [currentChatId, setCurrentChatId] = useState<string | null>(null);
 
     const socketRef = useRef<WebSocket | null>(null);
     const recorderRef = useRef<RecordRTC | null>(null);
     const streamRef = useRef<MediaStream | null>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
-    // Use the auth context instead of directly importing auth
+
+    // Use the auth context
     const { getIdToken } = useAuth();
 
-    // useEffect(() => {
-    //     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    // }, [messages]);
+    // Auto-scroll to bottom of messages
+    useEffect(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, [messages]);
 
+    // Create or get chat session
     useEffect(() => {
         const initializeChat = async () => {
             try {
                 const token = await getIdToken();
-                const response = await axios.post('http://localhost:7000/api/chat/new', { title: 'New Chat' }, {
+                const response = await fetch('/api/chat/new', {
+                    method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${token}`
-                    }
+                    },
+                    body: JSON.stringify({ title: "New Chat" })
                 });
-                const data = response.data;
+
+                const data = await response.json();
+
                 if (data.success) {
                     setCurrentChatId(data.data.chatId);
-                    setMessages([{ type: 'assistant', text: "How can i help you today ?", sourceType: 'text' }]);
+                    // Add the initial assistant message
+                    setMessages([{ type: 'assistant', text: 'How can I help you today?' }]);
                 } else {
-                    console.error("Failed to create chat session ", data.error);
+                    console.error('Failed to create chat session:', data.error);
                 }
             } catch (error) {
                 console.error('Error initializing chat:', error);
             }
-        }
+        };
+
         if (!currentChatId) {
             initializeChat();
         }
     }, [getIdToken, currentChatId]);
-
 
     // Connect to WebSocket server
     useEffect(() => {
@@ -65,12 +71,14 @@ const VoiceAssistant: React.FC = () => {
                 const token = await getIdToken() || '';
 
                 // Create WebSocket connection with token
-                const wsUrl = `ws://localhost:7000/?token=${token}`;
+                const wsUrl = `ws://localhost:7000?token=${token}`;
                 socketRef.current = new WebSocket(wsUrl);
 
                 socketRef.current.onopen = () => {
                     console.log('WebSocket connected');
                     setIsConnected(true);
+
+                    // Set current chat ID when connection opens
                     if (currentChatId && socketRef.current) {
                         socketRef.current.send(JSON.stringify({
                             type: 'set_chat_id',
@@ -89,62 +97,8 @@ const VoiceAssistant: React.FC = () => {
                     setIsConnected(false);
                 };
 
-                // socketRef.current.onmessage = (event) => {
-                //     try {
-                //         const response = JSON.parse(event.data);
-
-                //         if (response.type === 'connection_established') {
-                //             console.log('Connection confirmed:', response.message);
-                //         } else if (response.type === 'speech_response') {
-                //             if (response.success) {
-                //                 // Add transcription and response to messages
-                //                 setMessages(prev => [
-                //                     ...prev,
-                //                     { type: 'user', text: response.transcription },
-                //                     { type: 'assistant', text: response.textResponse }
-                //                 ]);
-
-                //                 // Play audio response if available
-                //                 console.log(response);
-                //                 if (response.audioContent) {
-                //                     try {
-                //                         // Properly decode base64 in browser
-                //                         const binaryString = atob(response.audioContent);
-                //                         const bytes = new Uint8Array(binaryString.length);
-                //                         for (let i = 0; i < binaryString.length; i++) {
-                //                             bytes[i] = binaryString.charCodeAt(i);
-                //                         }
-
-                //                         const audioBlob = new Blob([bytes], { type: 'audio/mp3' });
-                //                         const audioUrl = URL.createObjectURL(audioBlob);
-                //                         setCurrentAudio(audioUrl);
-
-                //                         const audio = new Audio(audioUrl);
-                //                         audio.play().catch(err => {
-                //                             console.error('Audio playback error:', err);
-                //                         });
-                //                     } catch (audioError) {
-                //                         console.error('Error processing audio response:', audioError);
-                //                     }
-                //                 }
-                //             } else {
-                //                 console.error('Speech processing error:', response.error);
-                //                 setMessages(prev => [
-                //                     ...prev,
-                //                     { type: 'error', text: `Error: ${response.error}` }
-                //                 ]);
-                //             }
-                //             setIsProcessing(false);
-                //         }
-                //     } catch (parseError) {
-                //         console.error('Error parsing WebSocket message:', parseError);
-                //         setIsProcessing(false);
-                //     }
-                // };
-
                 socketRef.current.onmessage = (event) => {
                     try {
-                        // Check if the data is binary or text
                         if (typeof event.data === 'string') {
                             const response = JSON.parse(event.data);
 
@@ -156,28 +110,11 @@ const VoiceAssistant: React.FC = () => {
                                     setMessages(prev => [
                                         ...prev,
                                         { type: 'user', text: response.transcription, sourceType: 'voice' },
-                                        { type: 'assistant', text: response.textResponse, sourceType: 'voice' }
+                                        { type: 'assistant', text: response.textResponse }
                                     ]);
                                     setIsProcessing(false);
-                                } else {
-                                    console.error('Speech processing error:', response.error);
-                                    // const errorMessage = response.error || 'Unknown error occurred';
-                                    // setMessages(prev => [
-                                    //     ...prev,
-                                    //     { type: 'error', text: `Error: ${errorMessage}` }
-                                    // ]);
-                                    // setIsProcessing(false);
                                 }
-                            }
-                            else if (response.type === 'text_response') {
-                                // Add this handler for text responses
-                                setMessages(prev => [
-                                    ...prev,
-                                    { type: 'assistant', text: response.textResponse, sourceType: 'text' }
-                                ]);
-                                setIsProcessing(false);
-                            }
-                            else if (response.type === 'audio_content') {
+                            } else if (response.type === 'audio_content') {
                                 try {
                                     // Properly decode base64 in browser
                                     const binaryString = atob(response.audioContent);
@@ -344,114 +281,80 @@ const VoiceAssistant: React.FC = () => {
         }
     };
 
+    // Send text message
     const sendTextMessage = () => {
         if (!textInput.trim()) return;
+
         if (!socketRef.current || socketRef.current.readyState !== WebSocket.OPEN) {
             setMessages(prev => [
                 ...prev,
-                { type: 'error', text: "Websocket not connected" }
+                { type: 'error', text: 'WebSocket not connected' }
             ]);
             return;
         }
-        // setMessages(prev => [
-        //     ...prev,
-        //     { type: 'user', text: textInput, sourceType: 'text' }
-        // ]);
+
+        // Add user message to UI immediately
+        setMessages(prev => [
+            ...prev,
+            { type: 'user', text: textInput, sourceType: 'text' }
+        ]);
+
+        // Set processing state
         setIsProcessing(true);
+
+        // Send message via WebSocket
         socketRef.current.send(JSON.stringify({
-            type: "text_message",
+            type: 'text_message',
             text: textInput
-        }))
+        }));
+
+        // Clear input
         setTextInput('');
-    }
+    };
 
     // Clear messages
     const clearMessages = async () => {
         try {
             const token = await getIdToken();
-            const response = await axios.post('http://localhost:7000/api/chat/new', { title: "New Chat" }, {
+            const response = await fetch('/api/chat/new', {
+                method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-            })
-            const data = response.data;
+                body: JSON.stringify({ title: "New Chat" })
+            });
+
+            const data = await response.json();
+
             if (data.success) {
                 setCurrentChatId(data.data.chatId);
+
+                // Update WebSocket with new chat ID
                 if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
                     socketRef.current.send(JSON.stringify({
                         type: 'set_chat_id',
                         chatId: data.data.chatId
                     }));
                 }
-                setMessages([{ type: "assistant", text: 'How can i help you today', sourceType: 'text' }]);
+
+                // Reset messages with initial greeting
+                setMessages([{ type: 'assistant', text: 'How can I help you today?' }]);
             } else {
-                console.error("Failed to create new chat sessions", data.error);
+                console.error('Failed to create new chat session:', data.error);
             }
         } catch (error) {
-            console.error("Error clearing conversation", error);
+            console.error('Error clearing conversation:', error);
         }
-        // setMessages([]);
-
-        // // Tell backend to clear context
-        // if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
-        //     socketRef.current.send(JSON.stringify({ type: 'clear_context' }));
-        // }
     };
+
+    // Handle form submission
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         sendTextMessage();
     };
 
     return (
-        // <div className="max-w-md mx-auto p-4">
-        //     <div className="mb-4 text-center">
-        //         <div className={`inline-block p-4 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}>
-        //             <button
-        //                 onClick={isRecording ? stopRecording : startRecording}
-        //                 disabled={!isConnected || isProcessing}
-        //                 className={`p-3 rounded-full ${isRecording ? 'bg-red-600' : 'bg-blue-600'} text-white disabled:opacity-50`}
-        //             >
-        //                 {isRecording ? '◼ Stop' : '🎤 Start'}
-        //             </button>
-        //         </div>
-
-        //         {isProcessing && <div className="mt-2">Processing...</div>}
-        //     </div>
-
-        //     <div className="border p-4 rounded-lg bg-gray-50 h-80 overflow-y-auto">
-        //         {messages.length === 0 ? (
-        //             <div className="text-center text-gray-500">
-        //                 Speak to start a conversation
-        //             </div>
-        //         ) : (
-        //             <div className="space-y-2">
-        //                 {messages.map((message, index) => (
-        //                     <div
-        //                         key={index}
-        //                         className={`p-2 rounded ${message.type === 'user'
-        //                             ? 'bg-blue-100 text-blue-800'
-        //                             : message.type === 'error'
-        //                                 ? 'bg-red-100 text-red-800'
-        //                                 : 'bg-green-100 text-green-800'
-        //                             }`}
-        //                     >
-        //                         <strong>{message.type === 'user' ? 'You' : message.type === 'error' ? 'Error' : 'Assistant'}:</strong> {message.text}
-        //                     </div>
-        //                 ))}
-        //             </div>
-        //         )}
-        //     </div>
-
-        //     <div className="mt-2 text-center">
-        //         <button
-        //             onClick={clearMessages}
-        //             className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
-        //         >
-        //             Clear Conversation
-        //         </button>
-        //     </div>
-        // </div>
         <div className="max-w-2xl mx-auto p-4">
             <div className="mb-4 text-center">
                 <div className={`inline-block p-2 rounded-full ${isConnected ? 'bg-green-100' : 'bg-red-100'}`}>
@@ -492,11 +395,11 @@ const VoiceAssistant: React.FC = () => {
                                                 ? 'Assistant'
                                                 : 'Error'}
                                     </span>
-                                    {/* {message.sourceType && (
+                                    {message.sourceType && (
                                         <span className="ml-2 text-xs bg-gray-200 px-1 rounded">
                                             {message.sourceType === 'voice' ? '🎤 Voice' : '⌨️ Text'}
                                         </span>
-                                    )} */}
+                                    )}
                                 </div>
                                 <div className="whitespace-pre-wrap">
                                     {message.text}
@@ -543,4 +446,4 @@ const VoiceAssistant: React.FC = () => {
     );
 };
 
-export default VoiceAssistant;
+export default AssistantInterface;
