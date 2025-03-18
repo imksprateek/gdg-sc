@@ -1,6 +1,6 @@
 # Web Framework
 Flask==2.0.1
-Flask-CORS==3.0.10
+Flask-CORS==4.0.2
 
 # Google Cloud Services
 google-cloud-vision==2.6.3
