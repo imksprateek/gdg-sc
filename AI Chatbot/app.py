@@ -1724,7 +1724,6 @@ def extract_product_name_from_query(query):
 
 # ===============================================================================
 # MAIN ENTRY POINT
-# Starts the Flask server when the script is run directly
 # ===============================================================================
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8080))
