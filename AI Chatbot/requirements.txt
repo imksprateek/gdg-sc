@@ -1,0 +1,20 @@
+# Web Framework
+Flask==2.0.1
+Flask-CORS==3.0.10
+
+# Google Cloud Services
+google-cloud-vision==2.6.3
+google-cloud-speech==2.9.0
+google-cloud-texttospeech==2.7.0
+
+# Firebase
+firebase-admin==5.1.0
+
+# HTTP Requests
+requests==2.27.1
+
+# Audio Processing (Optional but recommended)
+pydub==0.25.1
+
+# For handling environment variables
+python-dotenv==0.19.2
